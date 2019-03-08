@@ -26,6 +26,7 @@ static DEFINE_MUTEX(fib_mutex);
 
 static long long fib_sequence(long long k)
 {
+    ktime_t ktime = ktime_get();
     /* FIXME: use clz/ctz and fast algorithms to speed up */
     long long f[k + 2];
 
@@ -36,6 +37,9 @@ static long long fib_sequence(long long k)
         f[i] = f[i - 1] + f[i - 2];
     }
 
+    unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
+
+    printk(KERN_INFO "%lld:\t%u ns\n", k, ns);
     return f[k];
 }
 
