@@ -33,7 +33,7 @@ int main()
     */
 
     struct timespec start, end;
-    for (i = MAX_LENGTH - 10; i <= MAX_LENGTH + 10; i++) {
+    for (i = 0; i <= MAX_LENGTH; i++) {
         lseek(fd, i, SEEK_SET);
         buf.lower = 0;
         buf.upper = 0;
@@ -45,7 +45,7 @@ int main()
                        "%lld.\n",
                        i, sz);
         */
-        printf("i = %3d,\t %ld ns, f[%d] = ", i, end.tv_nsec - start.tv_nsec,
+        printf("i = %3d,\t %ld\tns, f[%d] =\t", i, end.tv_nsec - start.tv_nsec,
                i);
         printBigN(buf);
     }
