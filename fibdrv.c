@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include <linux/uaccess.h>
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -13,34 +14,37 @@ MODULE_DESCRIPTION("Fibonacci engine driver");
 MODULE_VERSION("0.1");
 
 #define DEV_FIBONACCI_NAME "fibonacci"
+#include "bigN.h"
 
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 92
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
-static long long fib_sequence(long long k)
+
+static long long fib_sequence(long long k, char *buf, size_t size)
 {
     ktime_t ktime = ktime_get();
     /* FIXME: use clz/ctz and fast algorithms to speed up */
-    long long f[k + 2];
+    struct BigN f[k + 2];
+    memset(f, 0, sizeof(struct BigN) * (k + 2));
 
-    f[0] = 0;
-    f[1] = 1;
+    f[0].lower = 0;
+    f[1].lower = 1;
 
-    for (int i = 2; i <= k; i++) {
-        f[i] = f[i - 1] + f[i - 2];
-    }
+    for (int i = 2; i <= k; i++)
+        addBigN(&f[i], f[i - 1], f[i - 2]);
 
     unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
 
     printk(KERN_INFO "%lld:\t%u ns\n", k, ns);
-    return f[k];
+
+    copy_to_user(buf, &f[k], size);
+    return 1;
 }
 
 static int fib_open(struct inode *inode, struct file *file)
@@ -64,7 +68,7 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    return (ssize_t) fib_sequence(*offset);
+    return (ssize_t) fib_sequence(*offset, buf, size);
 }
 
 /* write operation is skipped */
