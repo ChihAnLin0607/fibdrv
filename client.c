@@ -40,13 +40,15 @@ int main()
         lseek(fd, i, SEEK_SET);
         buf.lower = 0;
         buf.upper = 0;
+
         clock_gettime(CLOCK_MONOTONIC, &start);
         kernel_time = read(fd, &buf, sizeof(struct BigN));
         clock_gettime(CLOCK_MONOTONIC, &end);
+
         printf("%3d\t\t%ld\t\t\t%ld\t\t\t\t%ld ", i,
                end.tv_nsec - start.tv_nsec, kernel_time,
                end.tv_nsec - start.tv_nsec - kernel_time);
-        printBigN(buf);
+        //        printBigN(buf);
         printf("\n");
     }
     /*
