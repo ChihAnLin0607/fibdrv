@@ -28,7 +28,6 @@ static DEFINE_MUTEX(fib_mutex);
 
 static long long fib_sequence(long long k, char *buf, size_t size)
 {
-    ktime_t ktime = ktime_get();
     /* FIXME: use clz/ctz and fast algorithms to speed up */
     struct BigN f[k + 2];
     memset(f, 0, sizeof(struct BigN) * (k + 2));
@@ -39,9 +38,6 @@ static long long fib_sequence(long long k, char *buf, size_t size)
     for (int i = 2; i <= k; i++)
         addBigN(&f[i], f[i - 1], f[i - 2]);
 
-    unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
-
-    printk(KERN_INFO "%lld:\t%u ns\n", k, ns);
 
     copy_to_user(buf, &f[k], size);
     return 1;
@@ -68,7 +64,10 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    return (ssize_t) fib_sequence(*offset, buf, size);
+    ktime_t ktime = ktime_get();
+    fib_sequence(*offset, buf, size);
+    unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
+    return ns;
 }
 
 /* write operation is skipped */

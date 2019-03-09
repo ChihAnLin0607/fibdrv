@@ -14,9 +14,9 @@ struct BigN {
 static inline void printBigN(struct BigN n)
 {
 #ifdef DEV_FIBONACCI_NAME
-    printk(KERN_INFO "0x%016llX %016llX\n", n.upper, n.lower);
+    printk(KERN_INFO "0x%016llX %016llX", n.upper, n.lower);
 #else
-    printf("0x%016llX %016llX\n", n.upper, n.lower);
+    printf("0x%016llX %016llX", n.upper, n.lower);
 #endif
 }
 
