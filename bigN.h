@@ -42,6 +42,16 @@ static inline short getDigit(struct BigN x, short i)
         return (x.upper >> (i - 16) * 4) & 0xf;
 }
 
+static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
+{
+    if (x.lower < y.lower) {
+        output->lower = (-1 - y.lower) + 1 + x.lower;
+        x.upper--;
+    } else
+        output->lower = x.lower - y.lower;
+    output->upper = x.upper - y.upper;
+}
+
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
     int i = 0, j = 0;
