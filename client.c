@@ -17,7 +17,6 @@ int main()
 
     struct BigN buf;
     char write_buf[] = "testing writing";
-    //    int offset = 1000;  // TODO: test something bigger than the limit
     int i = 0;
 
     fd = open(FIB_DEV, O_RDWR);
@@ -26,12 +25,6 @@ int main()
         perror("Failed to open character device");
         exit(1);
     }
-    /*
-        for (i = 0; i <= offset; i++) {
-            sz = write(fd, write_buf, strlen(write_buf));
-            printf("Writing to " FIB_DEV ", returned the sequence %lld\n", sz);
-        }
-    */
 
     struct timespec start, end;
     long kernel_time_all = 0;
@@ -61,16 +54,7 @@ int main()
     printf("kernel_all_time = %ld\n", kernel_time_all);
     printf("multi_time / kernel_all_time = %f\n",
            (double) multi_time / kernel_time_all);
-    /*
-        for (i = offset; i >= 0; i--) {
-            lseek(fd, i, SEEK_SET);
-            sz = read(fd, buf, 1);
-            printf("Reading from " FIB_DEV
-                   " at offset %d, returned the sequence "
-                   "%lld.\n",
-                   i, sz);
-        }
-    */
+
     close(fd);
     return 0;
 }
