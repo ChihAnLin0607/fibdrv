@@ -47,14 +47,14 @@ int main()
         printf("\n");
         kernel_time_all += kernel_time;
     }
-
+#ifdef PERFORMACE_TRACE
     lseek(fd, MAX_LENGTH + 1, SEEK_SET);
     long multi_time = read(fd, NULL, 0);
     printf("multi_time = %ld\n", multi_time);
     printf("kernel_all_time = %ld\n", kernel_time_all);
     printf("multi_time / kernel_all_time = %f\n",
            (double) multi_time / kernel_time_all);
-
+#endif
     close(fd);
     return 0;
 }
