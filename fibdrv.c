@@ -20,15 +20,52 @@ MODULE_VERSION("0.1");
  * ssize_t can't fit the number > 92
  */
 
+#define FAST_FIBONACCI
+
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
+#ifdef FAST_FIBONACCI
+static void fib_sequence(long long k, struct BigN *buf)
+{
+    struct BigN fn = {0, 0}, fn_plus_1 = {0, 0}, tmp1 = {0, 0}, tmp2 = {0, 0};
+    //    printk(KERN_INFO "k = %lld\n", k);
+    if (!k) {
+        buf->lower = 0;
+        buf->upper = 0;
+        return;
+    } else if (k == 1 || k == 2) {
+        buf->lower = 1;
+        buf->upper = 0;
+        return;
+    }
 
+
+    if (!(k % 2)) {
+        // k = 2n
+        // f(2n) = 2f(n+1)f(n) - f(n)^2
+        fib_sequence(k >> 1, &fn);               // fn := f(n)
+        fib_sequence((k >> 1) + 1, &fn_plus_1);  // fn_plus_1 := f(n+1)
+        multiBigN(buf, fn_plus_1, fn);           // buf := f(n+1)*f(n)
+        addBigN(buf, *buf, *buf);                // buf := 2f(n+1)f(n)
+        multiBigN(&tmp1, fn, fn);                // tmp := f(n)^2
+        minusBigN(buf, *buf, tmp1);              // buf := 2f(n+1)f(n) - f(n)^2
+    } else {
+        // k = 2n + 1
+        // f(2n+1) = f(n+1)^2 + f(n)^2
+        fib_sequence((k - 1) >> 1, &fn);                 // fn := f(n)
+        fib_sequence((((k - 1) >> 1) + 1), &fn_plus_1);  // fn_plus_1 := f(n+1)
+        multiBigN(&tmp1, fn_plus_1, fn_plus_1);          // tmp1 := f(n+1)^2
+        multiBigN(&tmp2, fn, fn);                        // tmp2 := f(n)^2
+        addBigN(buf, tmp1, tmp2);  // buf := f(n+1)^2 + f(n)^2
+    }
+}
+
+#else
 static long long fib_sequence(long long k, char *buf, size_t size)
 {
-    /* FIXME: use clz/ctz and fast algorithms to speed up */
     struct BigN f[k + 2];
     memset(f, 0, sizeof(struct BigN) * (k + 2));
 
@@ -42,6 +79,7 @@ static long long fib_sequence(long long k, char *buf, size_t size)
     copy_to_user(buf, &f[k], size);
     return 1;
 }
+#endif
 
 static int fib_open(struct inode *inode, struct file *file)
 {
@@ -65,7 +103,13 @@ static ssize_t fib_read(struct file *file,
                         loff_t *offset)
 {
     ktime_t ktime = ktime_get();
+#ifdef FAST_FIBONACCI
+    struct BigN ret = {0, 0};
+    fib_sequence(*offset, &ret);
+    copy_to_user(buf, &ret, size);
+#else
     fib_sequence(*offset, buf, size);
+#endif
     unsigned int ns = ktime_to_ns(ktime_sub(ktime_get(), ktime));
     return ns;
 }
