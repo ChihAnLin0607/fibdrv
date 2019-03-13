@@ -16,16 +16,14 @@ MODULE_VERSION("0.1");
 #define DEV_FIBONACCI_NAME "fibonacci"
 #include "bigN.h"
 
-/* MAX_LENGTH is set to 92 because
- * ssize_t can't fit the number > 92
- */
-
 #define FAST_FIBONACCI
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
+static ktime_t multi_ktime = 0;
+static ktime_t ktime;
 
 #ifdef FAST_FIBONACCI
 static void fib_sequence(long long k, struct BigN *buf)
@@ -42,23 +40,26 @@ static void fib_sequence(long long k, struct BigN *buf)
         return;
     }
 
-
     if (!(k % 2)) {
         // k = 2n
         // f(2n) = 2f(n+1)f(n) - f(n)^2
         fib_sequence(k >> 1, &fn);               // fn := f(n)
         fib_sequence((k >> 1) + 1, &fn_plus_1);  // fn_plus_1 := f(n+1)
-        multiBigN(buf, fn_plus_1, fn);           // buf := f(n+1)*f(n)
-        addBigN(buf, *buf, *buf);                // buf := 2f(n+1)f(n)
-        multiBigN(&tmp1, fn, fn);                // tmp := f(n)^2
-        minusBigN(buf, *buf, tmp1);              // buf := 2f(n+1)f(n) - f(n)^2
+        ktime = ktime_get();
+        multiBigN(&tmp1, fn, fn);       // tmp := f(n)^2
+        multiBigN(buf, fn_plus_1, fn);  // buf := f(n+1)*f(n)
+        multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
+        addBigN(buf, *buf, *buf);    // buf := 2f(n+1)f(n)
+        minusBigN(buf, *buf, tmp1);  // buf := 2f(n+1)f(n) - f(n)^2
     } else {
         // k = 2n + 1
         // f(2n+1) = f(n+1)^2 + f(n)^2
         fib_sequence((k - 1) >> 1, &fn);                 // fn := f(n)
         fib_sequence((((k - 1) >> 1) + 1), &fn_plus_1);  // fn_plus_1 := f(n+1)
-        multiBigN(&tmp1, fn_plus_1, fn_plus_1);          // tmp1 := f(n+1)^2
-        multiBigN(&tmp2, fn, fn);                        // tmp2 := f(n)^2
+        ktime = ktime_get();
+        multiBigN(&tmp1, fn_plus_1, fn_plus_1);  // tmp1 := f(n+1)^2
+        multiBigN(&tmp2, fn, fn);                // tmp2 := f(n)^2
+        multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
         addBigN(buf, tmp1, tmp2);  // buf := f(n+1)^2 + f(n)^2
     }
 }
@@ -74,7 +75,6 @@ static long long fib_sequence(long long k, char *buf, size_t size)
 
     for (int i = 2; i <= k; i++)
         addBigN(&f[i], f[i - 1], f[i - 2]);
-
 
     copy_to_user(buf, &f[k], size);
     return 1;
@@ -104,6 +104,8 @@ static ssize_t fib_read(struct file *file,
 {
     ktime_t ktime = ktime_get();
 #ifdef FAST_FIBONACCI
+    if (*offset == MAX_LENGTH + 1)
+        return ktime_to_ns(multi_ktime);
     struct BigN ret = {0, 0};
     fib_sequence(*offset, &ret);
     copy_to_user(buf, &ret, size);
@@ -138,7 +140,7 @@ static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
         break;
     }
 
-    if (new_pos > MAX_LENGTH)
+    if (new_pos > MAX_LENGTH + 1)
         new_pos = MAX_LENGTH;  // max case
     if (new_pos < 0)
         new_pos = 0;        // min case

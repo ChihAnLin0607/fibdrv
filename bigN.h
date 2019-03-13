@@ -4,8 +4,6 @@
 #include <stdio.h>
 #endif
 
-
-
 #define MAX_LENGTH 186
 
 struct BigN {
@@ -56,22 +54,14 @@ static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
 
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
+
     int i = 0, j = 0;
     short digit;
     output->lower = 0;
     output->upper = 0;
 
     for (i = 0; i < 32; i++) {
-        /*#ifdef DEV_FIBONACCI_NAME
-        #else
-                printf("i = %d:\t", i);
-        #endif*/
         digit = getDigit(y, i);
-        /*#ifdef DEV_FIBONACCI_NAME
-        #else
-                printf("digit = %d\n", digit);
-        #endif*/
-
         if (digit) {
             j = 0;
             while (j++ < digit)

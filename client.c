@@ -33,6 +33,7 @@ int main()
     */
 
     struct timespec start, end;
+    long kernel_time_all = 0;
     printf(
         "|n|\t|user-space 時間差|\t|kernel 計算所花時間|\t|kernel傳遞到user "
         "space時間開銷|\n");
@@ -50,7 +51,15 @@ int main()
                end.tv_nsec - start.tv_nsec - kernel_time);
         //        printBigN(buf);
         printf("\n");
+        kernel_time_all += kernel_time;
     }
+
+    lseek(fd, MAX_LENGTH + 1, SEEK_SET);
+    long multi_time = read(fd, NULL, 0);
+    printf("multi_time = %ld\n", multi_time);
+    printf("kernel_all_time = %ld\n", kernel_time_all);
+    printf("multi_time / kernel_all_time = %f\n",
+           (double) multi_time / kernel_time_all);
     /*
         for (i = offset; i >= 0; i--) {
             lseek(fd, i, SEEK_SET);
