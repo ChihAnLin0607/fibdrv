@@ -15,6 +15,7 @@ MODULE_VERSION("0.1");
 
 #define DEV_FIBONACCI_NAME "fibonacci"
 #include "bigN.h"
+#include "common.h"
 
 #define FAST_FIBONACCI
 
@@ -22,8 +23,10 @@ static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
+#ifdef PERFORMACE_TRACE
 static ktime_t multi_ktime = 0;
 static ktime_t ktime;
+#endif
 
 #ifdef FAST_FIBONACCI
 static void fib_sequence(long long k, struct BigN *buf)
@@ -45,10 +48,14 @@ static void fib_sequence(long long k, struct BigN *buf)
         // f(2n) = 2f(n+1)f(n) - f(n)^2
         fib_sequence(k >> 1, &fn);               // fn := f(n)
         fib_sequence((k >> 1) + 1, &fn_plus_1);  // fn_plus_1 := f(n+1)
+#ifdef PERFORMACE_TRACE
         ktime = ktime_get();
+#endif
         multiBigN(&tmp1, fn, fn);       // tmp := f(n)^2
         multiBigN(buf, fn_plus_1, fn);  // buf := f(n+1)*f(n)
+#ifdef PERFORMACE_TRACE
         multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
+#endif
         addBigN(buf, *buf, *buf);    // buf := 2f(n+1)f(n)
         minusBigN(buf, *buf, tmp1);  // buf := 2f(n+1)f(n) - f(n)^2
     } else {
@@ -56,10 +63,14 @@ static void fib_sequence(long long k, struct BigN *buf)
         // f(2n+1) = f(n+1)^2 + f(n)^2
         fib_sequence((k - 1) >> 1, &fn);                 // fn := f(n)
         fib_sequence((((k - 1) >> 1) + 1), &fn_plus_1);  // fn_plus_1 := f(n+1)
+#ifdef PERFORMACE_TRACE
         ktime = ktime_get();
+#endif
         multiBigN(&tmp1, fn_plus_1, fn_plus_1);  // tmp1 := f(n+1)^2
         multiBigN(&tmp2, fn, fn);                // tmp2 := f(n)^2
+#ifdef PERFORMACE_TRACE
         multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
+#endif
         addBigN(buf, tmp1, tmp2);  // buf := f(n+1)^2 + f(n)^2
     }
 }
@@ -104,8 +115,11 @@ static ssize_t fib_read(struct file *file,
 {
     ktime_t ktime = ktime_get();
 #ifdef FAST_FIBONACCI
+
+#ifdef PERFORMACE_TRACE
     if (*offset == MAX_LENGTH + 1)
         return ktime_to_ns(multi_ktime);
+#endif
     struct BigN ret = {0, 0};
     fib_sequence(*offset, &ret);
     copy_to_user(buf, &ret, size);
@@ -140,7 +154,11 @@ static loff_t fib_device_lseek(struct file *file, loff_t offset, int orig)
         break;
     }
 
+#ifdef PERFORMACE_TRACE
     if (new_pos > MAX_LENGTH + 1)
+#else
+    if (new_pos > MAX_LENGTH)
+#endif
         new_pos = MAX_LENGTH;  // max case
     if (new_pos < 0)
         new_pos = 0;        // min case

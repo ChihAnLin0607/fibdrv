@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "bigN.h"
+#include "common.h"
 
 #define FIB_DEV "/dev/fibonacci"
 
