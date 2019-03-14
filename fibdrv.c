@@ -17,7 +17,7 @@ MODULE_VERSION("0.1");
 #include "bigN.h"
 #include "common.h"
 
-#define FAST_FIBONACCI
+//#define FAST_FIBONACCI
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
@@ -83,8 +83,7 @@ static long long fib_sequence(long long k, char *buf, size_t size)
     struct BigN f[k + 2];
     memset(f, 0, sizeof(struct BigN) * (k + 2));
 
-    f[0].lower = 0;
-    f[1].lower = 1;
+    f[1].num_part[0] = 1;
 
     for (int i = 2; i <= k; i++)
         addBigN(&f[i], f[i - 1], f[i - 2]);

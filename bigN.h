@@ -68,12 +68,30 @@ static inline short getDigit(struct BigN x, short i)
 
 static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
-    if (x.lower < y.lower) {
-        output->lower = (-1 - y.lower) + 1 + x.lower;
-        x.upper--;
-    } else
-        output->lower = x.lower - y.lower;
-    output->upper = x.upper - y.upper;
+    int i = 0, j;
+    while (i < BIGN_PART_COUNT) {
+        output->num_part[i] = x.num_part[i] - y.num_part[i];
+        if (x.num_part[i] < y.num_part[i]) {
+            output->num_part[i] &= 0xFFFFFFFF;
+            j = i + 1;
+            while (j < BIGN_PART_COUNT) {
+                x.num_part[j]--;
+                if (x.num_part[j] + 1)
+                    break;
+                x.num_part[j] &= 0xFFFFFFFF;
+                j++;
+            }
+        }
+
+        i++;
+    }
+    /*    if (x.lower < y.lower) {
+            output->lower = (-1 - y.lower) + 1 + x.lower;
+            x.upper--;
+        } else
+            output->lower = x.lower - y.lower;
+        output->upper = x.upper - y.upper;
+    */
 }
 
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
