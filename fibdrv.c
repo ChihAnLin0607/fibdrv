@@ -17,7 +17,7 @@ MODULE_VERSION("0.1");
 #include "bigN.h"
 #include "common.h"
 
-//#define FAST_FIBONACCI
+#define FAST_FIBONACCI
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
@@ -31,52 +31,47 @@ static ktime_t ktime;
 #ifdef FAST_FIBONACCI
 static void fib_sequence(long long k, struct BigN *buf)
 {
-    /*    struct BigN fn = {0, 0}, fn_plus_1 = {0, 0}, tmp1 = {0, 0}, tmp2 = {0,
-    0};
-        //    printk(KERN_INFO "k = %lld\n", k);
-        if (!k) {
-            buf->lower = 0;
-            buf->upper = 0;
-            return;
-        } else if (k == 1 || k == 2) {
-            buf->lower = 1;
-            buf->upper = 0;
-            return;
-        }
-
-        if (!(k % 2)) {
-            // k = 2n
-            // f(2n) = 2f(n+1)f(n) - f(n)^2
-            fib_sequence(k >> 1, &fn);               // fn := f(n)
-            fib_sequence((k >> 1) + 1, &fn_plus_1);  // fn_plus_1 := f(n+1)
-    #ifdef PERFORMACE_TRACE
-            ktime = ktime_get();
-    #endif
-            multiBigN(&tmp1, fn, fn);       // tmp := f(n)^2
-            multiBigN(buf, fn_plus_1, fn);  // buf := f(n+1)*f(n)
-    #ifdef PERFORMACE_TRACE
-            multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
-    #endif
-            addBigN(buf, *buf, *buf);    // buf := 2f(n+1)f(n)
-            minusBigN(buf, *buf, tmp1);  // buf := 2f(n+1)f(n) - f(n)^2
-        } else {
-            // k = 2n + 1
-            // f(2n+1) = f(n+1)^2 + f(n)^2
-            fib_sequence((k - 1) >> 1, &fn);                 // fn := f(n)
-            fib_sequence((((k - 1) >> 1) + 1), &fn_plus_1);  // fn_plus_1 :=
-    f(n+1)
-    #ifdef PERFORMACE_TRACE
-            ktime = ktime_get();
-    #endif
-            multiBigN(&tmp1, fn_plus_1, fn_plus_1);  // tmp1 := f(n+1)^2
-            multiBigN(&tmp2, fn, fn);                // tmp2 := f(n)^2
-    #ifdef PERFORMACE_TRACE
-            multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
-    #endif
-            addBigN(buf, tmp1, tmp2);  // buf := f(n+1)^2 + f(n)^2
-        }*/
+    struct BigN fn, fn_plus_1, tmp1, tmp2;
+    //    printk(KERN_INFO "k = %lld\n", k);
+    if (!k) {
+        memset(buf, 0, sizeof(struct BigN));
+        return;
+    } else if (k == 1 || k == 2) {
+        memset(buf, 0, sizeof(struct BigN));
+        buf->num_part[0] = 1;
+        return;
+    }
+    if (!(k % 2)) {
+        // k = 2n
+        // f(2n) = 2f(n+1)f(n) - f(n)^2
+        fib_sequence(k >> 1, &fn);               // fn := f(n)
+        fib_sequence((k >> 1) + 1, &fn_plus_1);  // fn_plus_1 := f(n+1)
+#ifdef PERFORMACE_TRACE
+        ktime = ktime_get();
+#endif
+        multiBigN(&tmp1, fn, fn);       // tmp := f(n)^2
+        multiBigN(buf, fn_plus_1, fn);  // buf := f(n+1)*f(n)
+#ifdef PERFORMACE_TRACE
+        multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
+#endif
+        addBigN(buf, *buf, *buf);    // buf := 2f(n+1)f(n)
+        minusBigN(buf, *buf, tmp1);  // buf := 2f(n+1)f(n) - f(n)^2
+    } else {
+        // k = 2n + 1
+        // f(2n+1) = f(n+1)^2 + f(n)^2
+        fib_sequence((k - 1) >> 1, &fn);                 // fn := f(n)
+        fib_sequence((((k - 1) >> 1) + 1), &fn_plus_1);  // fn_plus_1 := f(n+1)
+#ifdef PERFORMACE_TRACE
+        ktime = ktime_get();
+#endif
+        multiBigN(&tmp1, fn_plus_1, fn_plus_1);  // tmp1 := f(n+1)^2
+        multiBigN(&tmp2, fn, fn);                // tmp2 := f(n)^2
+#ifdef PERFORMACE_TRACE
+        multi_ktime = ktime_add(ktime_sub(ktime_get(), ktime), multi_ktime);
+#endif
+        addBigN(buf, tmp1, tmp2);  // buf := f(n+1)^2 + f(n)^2
+    }
 }
-
 #else
 static long long fib_sequence(long long k, char *buf, size_t size)
 {

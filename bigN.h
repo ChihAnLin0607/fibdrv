@@ -20,12 +20,12 @@ static inline void printBigN(struct BigN n)
 #ifdef DEV_FIBONACCI_NAME
     printk(KERN_INFO "0x");
     while (i < BIGN_PART_COUNT)
-        printk(KERN_INFO "0x%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
+        printk(KERN_INFO "%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
     printk(KERN_INFO "\n");
 #else
     printf("0x");
     while (i < BIGN_PART_COUNT)
-        printf("0x%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
+        printf("%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
     printf("\n");
 #endif
 }
@@ -100,6 +100,33 @@ static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
 
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
+    int xi, yi;
+    for (xi = 0; xi < BIGN_PART_COUNT; xi++)
+        output->num_part[xi] = 0;
+
+    for (yi = 0; yi < BIGN_PART_COUNT; yi++) {
+        if (!y.num_part[yi])
+            continue;
+        for (xi = 0; xi < BIGN_PART_COUNT - yi; xi++) {
+            if (!x.num_part[xi])
+                continue;
+            output->num_part[xi + yi] += x.num_part[xi] * y.num_part[yi];
+#ifndef DEV_FIBONACCI_NAME
+            printf("xi = %d, yi = %d, output->num_part[%d] = 0x%llX\n", xi, yi,
+                   xi + yi, output->num_part[xi + yi]);
+#endif
+        }
+    }
+
+    for (xi = 0; xi < BIGN_PART_COUNT - 1; xi++) {
+        if (output->num_part[xi] & 0xFFFFFFFFFF000000) {
+            output->num_part[xi + 1] +=
+                (output->num_part[xi] & 0xFFFFFFFFFF000000) >>
+                BIGN_BIT_EACH_PART;
+            output->num_part[xi] &= 0xFFFFFF;
+        }
+    }
+
     /*
         int i = 0, j = 0;
         short digit;

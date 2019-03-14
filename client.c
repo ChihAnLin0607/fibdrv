@@ -31,7 +31,7 @@ int main()
     printf(
         "|n|\t|user-space 時間差|\t|kernel "
         "計算所花時間|\t|kernel傳遞到userspace時間開銷|\n");
-    for (i = 0; i <= MAX_LENGTH; i++) {
+    for (i = 0; i <= MAX_LENGTH; i += 5) {
         lseek(fd, i, SEEK_SET);
         buf.lower = 0;
         buf.upper = 0;
@@ -43,7 +43,7 @@ int main()
         printf("%3d\t\t%ld\t\t\t%ld\t\t\t\t%ld ", i,
                end.tv_nsec - start.tv_nsec, kernel_time,
                end.tv_nsec - start.tv_nsec - kernel_time);
-        printBigN(buf);
+        //    printBigN(buf);
         printf("\n");
         kernel_time_all += kernel_time;
     }
@@ -56,10 +56,10 @@ int main()
            (double) multi_time / kernel_time_all);
 #endif
     /*
-    struct BigN x = {{0x0, 0x0, 0x0, 0x0, 0x0, 0x100000}};
+    struct BigN x = {{0xFFFFFF, 0x0, 0x0, 0x0, 0x0, 0x0}};
     struct BigN y = {{0x1, 0, 0, 0}};
     struct BigN ret;
-    minusBigN(&ret, x, y);
+    multiBigN(&ret, x, x);
     printBigN(ret);
     printf("\n");*/
     close(fd);

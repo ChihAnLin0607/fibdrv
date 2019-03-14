@@ -1,1 +1,1 @@
-//#define PERFORMACE_TRACE
+#define PERFORMACE_TRACE
