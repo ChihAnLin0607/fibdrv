@@ -5,8 +5,11 @@
 #endif
 
 #define MAX_LENGTH 186
+#define BIGN_PART_COUNT 4
+#define BIGN_BIT_EACH_PART 32
 
 struct BigN {
+    unsigned long long num_part[BIGN_PART_COUNT];
     unsigned long long lower;
     unsigned long long upper;
 };
@@ -14,9 +17,11 @@ struct BigN {
 static inline void printBigN(struct BigN n)
 {
 #ifdef DEV_FIBONACCI_NAME
-    printk(KERN_INFO "0x%016llX %016llX", n.upper, n.lower);
+    printk(KERN_INFO "0x%08llX %08llX %08llX %08llX", n.num_part[3],
+           n.num_part[2], n.num_part[1], n.num_part[0]);
 #else
-    printf("0x%016llX %016llX", n.upper, n.lower);
+    printf("0x%08llX %08llX %08llX %08llX", n.num_part[3], n.num_part[2],
+           n.num_part[1], n.num_part[0]);
 #endif
 }
 
@@ -28,10 +33,29 @@ static inline void shift_l_BigN(struct BigN *output, struct BigN x)
 
 static inline void addBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
-    output->upper = x.upper + y.upper;
-    if (y.lower > ~x.lower)
-        output->upper++;
-    output->lower = x.lower + y.lower;
+    output->num_part[0] = 0;
+    output->num_part[1] = 0;
+    output->num_part[2] = 0;
+    output->num_part[3] = 0;
+    int i = 0;
+    while (i < BIGN_PART_COUNT) {
+        output->num_part[i] =
+            output->num_part[i] + x.num_part[i] + y.num_part[i];
+        if (i < BIGN_BIT_EACH_PART &&
+            output->num_part[i] >
+                ((unsigned long long) ~0 >> (64 - BIGN_BIT_EACH_PART))) {
+            output->num_part[i] -=
+                ((unsigned long long) 1 << BIGN_BIT_EACH_PART);
+            output->num_part[i + 1]++;
+        }
+        i++;
+    }
+    /*
+        output->upper = x.upper + y.upper;
+        if (y.lower > ~x.lower)
+            output->upper++;
+        output->lower = x.lower + y.lower;
+    */
 }
 
 static inline short getDigit(struct BigN x, short i)
@@ -54,7 +78,6 @@ static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
 
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
-
     int i = 0, j = 0;
     short digit;
     output->lower = 0;
