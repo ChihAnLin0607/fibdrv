@@ -5,8 +5,8 @@
 #endif
 
 #define MAX_LENGTH 186
-#define BIGN_PART_COUNT 4
-#define BIGN_BIT_EACH_PART 32
+#define BIGN_PART_COUNT 6
+#define BIGN_BIT_EACH_PART 24
 
 struct BigN {
     unsigned long long num_part[BIGN_PART_COUNT];
@@ -16,12 +16,17 @@ struct BigN {
 
 static inline void printBigN(struct BigN n)
 {
+    int i = 0;
 #ifdef DEV_FIBONACCI_NAME
-    printk(KERN_INFO "0x%08llX %08llX %08llX %08llX", n.num_part[3],
-           n.num_part[2], n.num_part[1], n.num_part[0]);
+    printk(KERN_INFO "0x");
+    while (i < BIGN_PART_COUNT)
+        printk(KERN_INFO "0x%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
+    printk(KERN_INFO "\n");
 #else
-    printf("0x%08llX %08llX %08llX %08llX", n.num_part[3], n.num_part[2],
-           n.num_part[1], n.num_part[0]);
+    printf("0x");
+    while (i < BIGN_PART_COUNT)
+        printf("0x%06llX ", n.num_part[BIGN_PART_COUNT - 1 - i++]);
+    printf("\n");
 #endif
 }
 
@@ -33,11 +38,10 @@ static inline void shift_l_BigN(struct BigN *output, struct BigN x)
 
 static inline void addBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
-    output->num_part[0] = 0;
-    output->num_part[1] = 0;
-    output->num_part[2] = 0;
-    output->num_part[3] = 0;
     int i = 0;
+    while (i < BIGN_PART_COUNT)
+        output->num_part[i++] = 0;
+    i = 0;
     while (i < BIGN_PART_COUNT) {
         output->num_part[i] =
             output->num_part[i] + x.num_part[i] + y.num_part[i];
@@ -72,13 +76,13 @@ static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
     while (i < BIGN_PART_COUNT) {
         output->num_part[i] = x.num_part[i] - y.num_part[i];
         if (x.num_part[i] < y.num_part[i]) {
-            output->num_part[i] &= 0xFFFFFFFF;
+            output->num_part[i] &= 0xFFFFFF;
             j = i + 1;
             while (j < BIGN_PART_COUNT) {
                 x.num_part[j]--;
                 if (x.num_part[j] + 1)
                     break;
-                x.num_part[j] &= 0xFFFFFFFF;
+                x.num_part[j] &= 0xFFFFFF;
                 j++;
             }
         }
@@ -96,18 +100,20 @@ static inline void minusBigN(struct BigN *output, struct BigN x, struct BigN y)
 
 static inline void multiBigN(struct BigN *output, struct BigN x, struct BigN y)
 {
-    int i = 0, j = 0;
-    short digit;
-    output->lower = 0;
-    output->upper = 0;
+    /*
+        int i = 0, j = 0;
+        short digit;
+        output->lower = 0;
+        output->upper = 0;
 
-    for (i = 0; i < 32; i++) {
-        digit = getDigit(y, i);
-        if (digit) {
-            j = 0;
-            while (j++ < digit)
-                addBigN(output, *output, x);
+        for (i = 0; i < 32; i++) {
+            digit = getDigit(y, i);
+            if (digit) {
+                j = 0;
+                while (j++ < digit)
+                    addBigN(output, *output, x);
+            }
+            shift_l_BigN(&x, x);
         }
-        shift_l_BigN(&x, x);
-    }
+    */
 }
