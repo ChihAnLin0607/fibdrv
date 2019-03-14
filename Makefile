@@ -24,7 +24,7 @@ load:
 unload:
 	sudo rmmod $(TARGET_MODULE) || true >/dev/null
 
-client: client.c bigN.h
+client: client.c bigN.h common.h
 	$(CC) -o $@ $^
 
 PRINTF = env printf
