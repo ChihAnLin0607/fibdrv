@@ -13,9 +13,9 @@ int main()
     int fd;
     long long sz;
 
-    char buf[1];
+    unsigned int kernel_time;
     char write_buf[] = "testing writing";
-    int offset = 100;  // TODO: test something bigger than the limit
+    int offset = 92;  // TODO: test something bigger than the limit
     int i = 0;
 
     fd = open(FIB_DEV, O_RDWR);
@@ -24,37 +24,24 @@ int main()
         perror("Failed to open character device");
         exit(1);
     }
-    /*
-        for (i = 0; i <= offset; i++) {
-            sz = write(fd, write_buf, strlen(write_buf));
-            printf("Writing to " FIB_DEV ", returned the sequence %lld\n", sz);
-        }
-    */
+
 
     struct timespec start, end;
+    printf(
+        "|n|\t|user-space 時間差|\t|kernel "
+        "計算所花時間|\t|kernel傳遞到userspace時間開銷|\n");
     for (i = 0; i <= offset; i++) {
         lseek(fd, i, SEEK_SET);
 
         clock_gettime(CLOCK_MONOTONIC, &start);
-        sz = read(fd, buf, 1);
+        sz = read(fd, &kernel_time, sizeof(unsigned int));
         clock_gettime(CLOCK_MONOTONIC, &end);
-        /*        printf("Reading from " FIB_DEV
-                       " at offset %d, returned the sequence "
-                       "%lld.\n",
-                       i, sz);
-        */
-        printf("i = %3d,\t %ld ns\n", i, end.tv_nsec - start.tv_nsec);
+        printf("%3d\t\t%ld\t\t\t%u\t\t\t\t%ld ", i, end.tv_nsec - start.tv_nsec,
+               kernel_time, end.tv_nsec - start.tv_nsec - kernel_time);
+        printf("%lld", sz);
+        printf("\n");
     }
-    /*
-        for (i = offset; i >= 0; i--) {
-            lseek(fd, i, SEEK_SET);
-            sz = read(fd, buf, 1);
-            printf("Reading from " FIB_DEV
-                   " at offset %d, returned the sequence "
-                   "%lld.\n",
-                   i, sz);
-        }
-    */
+
     close(fd);
     return 0;
 }
